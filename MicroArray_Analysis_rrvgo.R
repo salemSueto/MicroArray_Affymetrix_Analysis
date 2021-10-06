@@ -54,6 +54,7 @@ library(factoextra)     #Multivariate Data Analyses and Elegant Visualization
 library(hgu133plus2.db) #Affymetrix Human Genome U133 Plus 2.0 Array annotation data
 library(gprofiler2)     #Gene list functional enrichment analysis
 library(rrvgo)          #Reduce + Visualize GO
+library(shinydashboard) #Create a shiny version of the result from rrvgo
 library(tidytext)       #Text mining tasks and plot generation.
 library(gridExtra)      #Arrange multiple grid-based plots on a page
 library(scales)         #Graphical scales map data to aesthetics
@@ -63,13 +64,13 @@ rm(list=ls())
 
 ### USER's INPUT ###
 sampleTarget <- "metadata.txt" #Sample filename
-groupComparison <- c("HGP-Control", "UV-Control", "HGPTERT-Control", "ControlTERT-Control") #Group Comparisons
+groupComparison <- c("HGP-Control", "UV-Control", "HGPTERT-Control") #Group Comparisons
 enrich_org <- "Homo sapiens" #Scientific name of the organism to perform enrichment analysis with g:Profiler (https://biit.cs.ut.ee/gprofiler/page/organism-list)
 
 #Gene Ontology Reduced Terms settings: rrvgo package
 orgDB <- "org.Hs.eg.db" #Allowed values: https://www.bioconductor.org/packages/release/BiocViews.html#___OrgDb
 simSimMethod <- "Rel" #Allowed values: "Resnik", "Lin", "Rel", "Jiang", "Wang"
-thr <- 0.7 #Allowed values: Large (allowed similarity=0.9), Medium (0.7), Small (0.5), Tiny (0.4)
+thr <- 0.4 #Allowed values: Large (allowed similarity=0.9), Medium (0.7), Small (0.5), Tiny (0.4)
 topWords <- 10 #Highest number of words to describe the members of the GO cluster during the reduced step
 ####################
 
@@ -283,8 +284,8 @@ colnames(all_info) <- make.names(colnames(all_info))
 all_info$DEG <- rowSums(abs(all_info[(ncol(all_info)-ncol(contrast.matrix)+1) : ncol(all_info)]))
 
 resultDF <- all_info %>% filter(genes.ENTREZID != "NA") %>%    #Remove rows where the ENTREZID is "NA"
-                        filter(DEG > 0) %>%                   #Filter for rows where the gene is DE
-                        dplyr::select(starts_with(c("genes", "p.value", "coefficients")), make.names(colnames(contrast.matrix))) #Select columns
+  filter(DEG > 0) %>%                   #Filter for rows where the gene is DE
+  dplyr::select(starts_with(c("genes", "p.value", "coefficients")), make.names(colnames(contrast.matrix))) #Select columns
 
 #Get the unique list of DEGs for each group
 deg_unique_group <- list()
@@ -300,7 +301,7 @@ for (i in make.names(colnames(contrast.matrix)))
 
 deg_unique_group_DF <- as.data.frame(t(plyr::ldply(deg_unique_group, rbind)))
 
-#Create clustering
+#Create Clustering Plot
 uniqueDEG <- unique(uniqueDEG)
 degClusterDF <- data.frame(matrix(0, ncol=length(colnames(contrast.matrix)), nrow=length(uniqueDEG)))
 colnames(degClusterDF) <- make.names(colnames(contrast.matrix))
